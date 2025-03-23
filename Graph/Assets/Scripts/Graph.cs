@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static FunctionLibrary;
 
 
 public class Graph : MonoBehaviour
@@ -17,12 +18,14 @@ public class Graph : MonoBehaviour
     [SerializeField, Range(1, 100)]
     int resolution = 30;
 
-    [SerializeField, Range(0, 2)]
-    int function;
+
+    [SerializeField]
+    FunctionLibrary.FunctionName function;
 
     Transform[] points;
-    List<Func<float,float, float>>  waveFunctions = new List<Func<float, float, float>>();
-    Func<float, float, float> waveFunc;
+
+
+    FunctionLibrary.Function waveFunction;
 
     void Start()
     {
@@ -30,11 +33,11 @@ public class Graph : MonoBehaviour
 
     private void Awake()
     {
-        waveFunctions.Add(FunctionLibrary.Wave);
-        waveFunctions.Add(FunctionLibrary.MultiWave);
-        waveFunctions.Add(FunctionLibrary.Ripple);
 
-        waveFunc = waveFunctions.ElementAt(function);
+
+        waveFunction = FunctionLibrary.GetFunction(function);
+
+
 
         points = new Transform[resolution];
 
@@ -55,10 +58,10 @@ public class Graph : MonoBehaviour
     }
     async void InitiateAsync()
     {
-       await SwitchWavesAsync();
+        await SwitchWavesAsync();
     }
 
-        void Update()
+    void Update()
     {
 
         float time = Time.time;
@@ -66,22 +69,26 @@ public class Graph : MonoBehaviour
         {
             Transform point = points[i];
             Vector3 position = point.localPosition;
-           
-                position.y = waveFunc(position.x,time);
-                
-                point.localPosition = position;
+
+            position.y = waveFunction(position.x, time);
+
+            point.localPosition = position;
         }
     }
 
     async Task SwitchWavesAsync()
     {
-        int i = 0;
-        while (true) {
-            await Task.Delay(5000);
-            waveFunc = waveFunctions.ElementAt(i % waveFunctions.Count);
-            i++;
+
+        while (true)
+        {
+            foreach (FunctionName funcName in Enum.GetValues(typeof(FunctionName)))
+            {
+                await Task.Delay(5000);
+                waveFunction = FunctionLibrary.GetFunction(funcName);
+
+            }
         }
-        
+
     }
 
 

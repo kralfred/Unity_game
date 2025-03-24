@@ -8,6 +8,9 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static FunctionLibrary;
+using UnityEngine.UI;
+using Toggle = UnityEngine.UI.Toggle;
+using UnityEngine.Profiling;
 
 
 public class Graph : MonoBehaviour
@@ -19,8 +22,10 @@ public class Graph : MonoBehaviour
     int resolution = 30;
 
     [SerializeField] 
-    Button spin;
+    private Toggle rotating;
+    bool isRotating;
 
+  
 
     [SerializeField] private FunctionLibrary.FunctionName _function; // Backing field
     public FunctionLibrary.FunctionName Function
@@ -38,7 +43,10 @@ public class Graph : MonoBehaviour
 
     Transform[] points;
 
+    List<SpinFunction> SpinFunctions;
     FunctionLibrary.Function waveFunction;
+
+  
 
     void Start()
     {
@@ -47,7 +55,14 @@ public class Graph : MonoBehaviour
     void Awake()
     {
 
-        UpdateWaveFunction();
+       
+        if (isRotating == true)
+        {
+            SpinFunctions.Add(FunctionLibrary.GetSpinFunction(SpinFunctionName.SpinObject));
+        }
+      
+
+            UpdateWaveFunction();
 
         float step = 2f / resolution;
         var scale = Vector3.one * step;
@@ -69,12 +84,17 @@ public class Graph : MonoBehaviour
 
     void UpdateWaveFunction() {
         waveFunction = FunctionLibrary.GetFunction(_function);
+        
     }
 
-
+    private void OnRotationToggleChanged(bool newValue)
+    {
+       
+    }
+    
     void Update()
     {
-        
+        Profiler.BeginSample("Update Sample");
         float time = Time.time;
         float step = 2f / resolution;
         for (int i = 0, x = 0, z = 0; i < points.Length; i++, x++)
@@ -86,9 +106,19 @@ public class Graph : MonoBehaviour
             }
             float u = (x + 0.5f) * step - 1f;
             float v = (z + 0.5f) * step - 1f;
-            points[i].localPosition =  waveFunction(u, v, time);
+            if (SpinFunctions != null)
+            {
+                var spinF = SpinFunctions.ElementAt(0);
+                points[i].localPosition = spinF(points[i].localPosition = waveFunction(u, v, 1), time);
+
+            }
+            else { 
+             points[i].localPosition = waveFunction(u, v, time);
+            }
             
+
         }
+        Profiler.EndSample();
     }
 
     async void InitiateAsync()

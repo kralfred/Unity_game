@@ -11,23 +11,20 @@ using static FunctionLibrary;
 using UnityEngine.UI;
 using Toggle = UnityEngine.UI.Toggle;
 using UnityEngine.Profiling;
+using System.Data;
 
 
 public class Graph : MonoBehaviour
 {
     [SerializeField]
     Transform pointPrefab;
-    Vector3 position;
     [SerializeField, Range(1, 100)]
     int resolution = 30;
+    [SerializeField]
+    AnimationToggle toggle;
 
-    [SerializeField] 
-    private Toggle rotating;
-    bool isRotating;
 
-  
-
-    [SerializeField] private FunctionLibrary.FunctionName _function; // Backing field
+    [SerializeField] private FunctionLibrary.FunctionName _function;
     public FunctionLibrary.FunctionName Function
     {
         get => _function;
@@ -43,7 +40,7 @@ public class Graph : MonoBehaviour
 
     Transform[] points;
 
-    List<SpinFunction> SpinFunctions;
+
     FunctionLibrary.Function waveFunction;
 
   
@@ -55,27 +52,25 @@ public class Graph : MonoBehaviour
     void Awake()
     {
 
-       
-        if (isRotating == true)
-        {
-            SpinFunctions.Add(FunctionLibrary.GetSpinFunction(SpinFunctionName.SpinObject));
-        }
-      
-
             UpdateWaveFunction();
 
         float step = 2f / resolution;
         var scale = Vector3.one * step;
 
         points = new Transform[resolution * resolution];
+       
         for (int i = 0; i < points.Length; i++)
         {
-
             Transform point = points[i] = Instantiate(pointPrefab);
-
             point.localScale = scale;
             point.SetParent(transform, false);
+            
+            Rotate rotateScript = point.gameObject.AddComponent<Rotate>();
+            rotateScript.SetToggle(toggle);
+
         }
+       
+
     }
     private void OnValidate()
     {
@@ -87,10 +82,7 @@ public class Graph : MonoBehaviour
         
     }
 
-    private void OnRotationToggleChanged(bool newValue)
-    {
-       
-    }
+
     
     void Update()
     {
@@ -106,16 +98,9 @@ public class Graph : MonoBehaviour
             }
             float u = (x + 0.5f) * step - 1f;
             float v = (z + 0.5f) * step - 1f;
-            if (SpinFunctions != null)
-            {
-                var spinF = SpinFunctions.ElementAt(0);
-                points[i].localPosition = spinF(points[i].localPosition = waveFunction(u, v, 1), time);
 
-            }
-            else { 
-             points[i].localPosition = waveFunction(u, v, time);
-            }
-            
+                points[i].localPosition = waveFunction(u, v, time);
+
 
         }
         Profiler.EndSample();

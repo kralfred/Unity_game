@@ -18,14 +18,14 @@ public class AnimationToggle : MonoBehaviour
         return isInMotion;
     }
     public Quaternion RotateFunc(float time) {
-        Quaternion rotation = Quaternion.AngleAxis(rotationSpeed * time,Vector3.zero);
+        Quaternion rotation = Quaternion.identity;
         if (xRot) {
             rotation *= Quaternion.AngleAxis(rotationSpeed * time, Vector3.up);
         }
-        else if (yRot) {
+        if (yRot) {
             rotation *= Quaternion.AngleAxis(rotationSpeed * time, Vector3.right);
         }
-        else if (zRot)
+        if (zRot)
         {
             rotation *= Quaternion.AngleAxis(rotationSpeed * time, Vector3.forward);
         }

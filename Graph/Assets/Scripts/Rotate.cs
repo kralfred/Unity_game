@@ -7,8 +7,6 @@ using Toggle = UnityEngine.UI.Toggle;
 public class Rotate : MonoBehaviour
 {
 
-
-
     [SerializeField]
     private AnimationToggle toggle;
 
@@ -31,7 +29,8 @@ public class Rotate : MonoBehaviour
     {
         if (toggle.GetValue())
         {
-            transform.Rotate(rotationSpeed * Time.deltaTime, rotationSpeed * Time.deltaTime, rotationSpeed * Time.deltaTime);
+           
+            transform.rotation *= toggle.RotateFunc(Time.deltaTime * rotationSpeed);
         }
         else {
 

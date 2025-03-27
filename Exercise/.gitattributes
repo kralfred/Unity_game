@@ -1,0 +1,8 @@
+*.cs linguist-language=CSharp
+
+*.cs linguist-language=CSharp
+*.meta linguist-detectable=false
+*.unity linguist-detectable=false
+*.asset linguist-detectable=false
+*.prefab linguist-detectable=false
+UpgradeLog.htm linguist-detectable=false

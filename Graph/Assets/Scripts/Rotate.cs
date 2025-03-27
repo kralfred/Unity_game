@@ -30,7 +30,7 @@ public class Rotate : MonoBehaviour
         if (toggle.GetValue())
         {
            
-            transform.rotation *= toggle.RotateFunc(Time.deltaTime * rotationSpeed);
+            transform.rotation *= toggle.RotateFunc(Time.deltaTime);
         }
         else {
 

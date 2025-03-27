@@ -6,6 +6,9 @@ public class AnimationToggle : MonoBehaviour
 {
     public bool isInMotion = true;
 
+    [SerializeField, Range(1, 100)]
+    int rotationSpeed = 20;
+
     public bool xRot = false;
     public bool yRot = false;
     public bool zRot = false;
@@ -14,19 +17,18 @@ public class AnimationToggle : MonoBehaviour
     {
         return isInMotion;
     }
-    public Quaternion RotateFunc(float degree) {
-        Quaternion rotation = Quaternion.AngleAxis(degree,Vector3.zero);
+    public Quaternion RotateFunc(float time) {
+        Quaternion rotation = Quaternion.AngleAxis(rotationSpeed * time,Vector3.zero);
         if (xRot) {
-            rotation *= Quaternion.AngleAxis(degree, Vector3.up);
+            rotation *= Quaternion.AngleAxis(rotationSpeed * time, Vector3.up);
         }
         else if (yRot) {
-            rotation *= Quaternion.AngleAxis(degree, Vector3.right);
+            rotation *= Quaternion.AngleAxis(rotationSpeed * time, Vector3.right);
         }
         else if (zRot)
         {
-            rotation *= Quaternion.AngleAxis(degree, Vector3.forward);
+            rotation *= Quaternion.AngleAxis(rotationSpeed * time, Vector3.forward);
         }
         return rotation;
-
     }
 }

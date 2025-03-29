@@ -16,10 +16,13 @@ using System.Data;
 
 public class Graph : MonoBehaviour
 {
+    [Header("Prefabs")]
     [SerializeField]
     Transform pointPrefab;
+
+    [Header("Settings")]
     [SerializeField, Range(1, 100)]
-    int resolution = 30;
+    private int resolution = 30;
     [SerializeField]
     AnimationToggle toggle;
 
@@ -38,38 +41,35 @@ public class Graph : MonoBehaviour
         }
     }
 
+    private float step;
+
     Transform[] points;
 
 
     FunctionLibrary.Function waveFunction;
 
-  
-
-    void Start()
-    {
-    }
 
     void Awake()
     {
 
-            UpdateWaveFunction();
+        UpdateWaveFunction();
 
-        float step = 2f / resolution;
+        step = 2f / resolution;
         var scale = Vector3.one * step;
 
         points = new Transform[resolution * resolution];
-       
+
         for (int i = 0; i < points.Length; i++)
         {
             Transform point = points[i] = Instantiate(pointPrefab);
             point.localScale = scale;
             point.SetParent(transform, false);
-            
+
             Rotate rotateScript = point.gameObject.AddComponent<Rotate>();
             rotateScript.SetToggle(toggle);
 
         }
-       
+
 
     }
     private void OnValidate()
@@ -77,18 +77,17 @@ public class Graph : MonoBehaviour
         UpdateWaveFunction();
     }
 
-    void UpdateWaveFunction() {
+    void UpdateWaveFunction()
+    {
         waveFunction = FunctionLibrary.GetFunction(_function);
-        
+
     }
 
-
-    
     void Update()
     {
         Profiler.BeginSample("Update Sample");
         float time = Time.time;
-        float step = 2f / resolution;
+
         for (int i = 0, x = 0, z = 0; i < points.Length; i++, x++)
         {
             if (x == resolution)
@@ -99,7 +98,7 @@ public class Graph : MonoBehaviour
             float u = (x + 0.5f) * step - 1f;
             float v = (z + 0.5f) * step - 1f;
 
-                points[i].localPosition = waveFunction(u, v, time);
+            points[i].localPosition = waveFunction(u, v, time);
 
 
         }

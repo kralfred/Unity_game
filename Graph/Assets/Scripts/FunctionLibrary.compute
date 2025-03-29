@@ -3,10 +3,10 @@
 
  RWStructuredBuffer<float3> _Positions;
 
-uint _Resolution;
+uint _Resolution, _functionIndex;
 
 float _Step, _Time;
-  uint _functionIndex;  
+   
 
 float3 Wave (float u, float v, float t) {
 	float3 p;
@@ -15,10 +15,31 @@ float3 Wave (float u, float v, float t) {
 	p.z = v;
 	return p;
 }
+float3 MultiWave(float u, float v, float t) {
+    float3 p;
+    p.x = u;
+    p.y = sin(PI * (u + 0.5f * t));  
+    float test = 2.0f * PI * (v + t);  
+    p.y += 0.5f * sin(test);
+    p.y += sin(PI * (u + v + 0.25f * t));
+    p.y *= 1.0f / 2.5f; 
+    p.z = v;
+    return p;
+}
+	float3 Ripple(float u, float v, float t)
+    {
+        float d = sqrt(u * u + v * v);
+        float3 p;
+        p.x = u;
+		float test = PI * (4 * d - t);
+        p.y = sin(test);
+        p.y /= 1.0f + 10 * d;
+        p.z = v;
+        return p;
+    }
 float3 Sphere (float u, float v, float t) {
 
-
-	float3 r = cos(0.5f * PI * v);
+	float r = cos(0.5f * PI * v);
 	float3 p;
 	p.x = r * sin(PI * u);
 	p.y = sin(PI * 0.5f * v);
@@ -39,11 +60,17 @@ void SetPosition (uint3 id, float3 position) {
 [numthreads(8, 8, 1)]
 void FunctionKernel (uint3 id: SV_DispatchThreadID) {
 	float2 uv = GetUV(id);
-	if(functionIndex == 0){
+	if(_functionIndex == 0){
 		SetPosition(id, Wave(uv.x, uv.y, _Time));
 		}
-	else if(functionIndex == 1){
-		SetPosition(id, Sphere(uv.x, uv.y, _Time)
+		else if(_functionIndex == 1){
+		SetPosition(id, MultiWave(uv.x, uv.y, _Time));
+	}
+	else if(_functionIndex == 2){
+		SetPosition(id, Ripple(uv.x, uv.y, _Time));
+	}
+	else if(_functionIndex == 3){
+		SetPosition(id, Sphere(uv.x, uv.y, _Time));
 	}
 }
 

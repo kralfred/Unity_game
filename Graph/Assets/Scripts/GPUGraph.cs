@@ -8,8 +8,6 @@ public class GPUGraph : MonoBehaviour
     [SerializeField, Range(10, 200)]
     int resolution = 10;
 
-    [SerializeField]
-    FunctionLibrary.FunctionName function;
 
     public enum TransitionMode { Cycle, Random }
 
@@ -22,8 +20,11 @@ public class GPUGraph : MonoBehaviour
     [SerializeField]
     ComputeShader computeShader;
 
+
+    private enum FunctionName { Wave, MultiWave, Ripple, Sphere }
+
     [SerializeField]
-    public enum FunctionName { Wave, MultiWave, Ripple, Sphere }
+    private FunctionName currentFunction = FunctionName.Wave;
 
     [SerializeField]
     Material material;
@@ -31,25 +32,27 @@ public class GPUGraph : MonoBehaviour
     [SerializeField]
     Mesh mesh;
 
-    private int functionId = 2;
+   
 
     static readonly int
         positionsId = Shader.PropertyToID("_Positions"),
         resolutionId = Shader.PropertyToID("_Resolution"),
         stepId = Shader.PropertyToID("_Step"),
-        timeId = Shader.PropertyToID("_Time");
+        timeId = Shader.PropertyToID("_Time"),
         functionId = Shader.PropertyToID("_functionIndex");
 
     private ComputeBuffer positionsBuffer;
 
     void UpdateFunctionOnGPU()
     {
+
+
         float step = 2f / resolution;
         computeShader.SetInt(resolutionId, resolution);
         computeShader.SetFloat(stepId, step);
         computeShader.SetFloat(timeId, Time.time);
-        computeShader.SetInt(functionID, 2);
         computeShader.SetBuffer(0, positionsId, positionsBuffer);
+        computeShader.SetInt(functionId, (int)currentFunction);
 
         int kernelHandle = computeShader.FindKernel("FunctionKernel");
         if (kernelHandle < 0)

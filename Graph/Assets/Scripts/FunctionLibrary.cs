@@ -61,7 +61,6 @@ public static class FunctionLibrary
         float r = Cos(0.5f * PI * v);
         Vector3 p;
 
-
         p.x = r * Sin(PI * u);
         p.y = Sin(PI * 0.5f * v);
         p.z = r * Cos(PI * u);

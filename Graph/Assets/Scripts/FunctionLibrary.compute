@@ -1,13 +1,10 @@
-#pragma kernel FunctionKernel
+// Assets/Shaders/FunctionLibrary.cginc
+#ifndef FUNCTION_LIBRARY_CGINC
+#define FUNCTION_LIBRARY_CGINC
+
 #define PI 3.14159265358979323846
 
- RWStructuredBuffer<float3> _Positions;
-
-uint _Resolution, _functionIndex;
-
-float _Step, _Time;
-
- StructuredBuffer<float> _TimeBuffer;
+StructuredBuffer<float> _TimeBuffer;
 
 
 float3 Wave (float u, float v) {
@@ -18,6 +15,8 @@ float3 Wave (float u, float v) {
 	p.z = v;
 	return p;
 }
+
+
 float3 MultiWave(float u, float v) {
 	float t = _TimeBuffer[0]; 
     float3 p;
@@ -30,8 +29,9 @@ float3 MultiWave(float u, float v) {
     p.z = v;
     return p;
 }
-	float3 Ripple(float u, float v, float t)
+	float3 Ripple(float u, float v)
     {
+		float t = _TimeBuffer[0];
         float d = sqrt(u * u + v * v);
         float3 p;
         p.x = u;
@@ -41,8 +41,8 @@ float3 MultiWave(float u, float v) {
         p.z = v;
         return p;
     }
-float3 Sphere (float u, float v, float t) {
-
+float3 Sphere (float u, float v) {
+	float t = _TimeBuffer[0];
 	float r = cos(0.5f * PI * v);
 	float3 p;
 	p.x = r * sin(PI * u);
@@ -50,33 +50,22 @@ float3 Sphere (float u, float v, float t) {
 	p.z = r * cos(PI * u);
 	return p;
 }
-
-float2 GetUV (uint3 id) {
-	return (id.xy + 0.5) * _Step - 1.0;
+float3 Torus (float u, float v) {
+	float t = _TimeBuffer[0];
+	float r1 = 0.7 + 0.1 * sin(PI * (6.0 * u + 0.5 * t));
+	float r2 = 0.15 + 0.05 * sin(PI * (8.0 * u + 4.0 * v + 2.0 * t));
+	float s = r2 * cos(PI * v) + r1;
+	float3 p;
+	p.x = s * sin(PI * u);
+	p.y = r2 * sin(PI * v);
+	p.z = s * cos(PI * u);
+	return p;
 }
-void SetPosition (uint3 id, float3 position) {
-	if (id.x < _Resolution && id.y < _Resolution) {
-		_Positions[id.x + id.y * _Resolution] = position;
-	}
-}
 
 
-[numthreads(8, 8, 1)]
-void FunctionKernel (uint3 id: SV_DispatchThreadID) {
-	float2 uv = GetUV(id);
-	if(_functionIndex == 0){
-		SetPosition(id, Wave(uv.x, uv.y));
-		}
-		else if(_functionIndex == 1){
-		SetPosition(id, MultiWave(uv.x, uv.y));
-	}
-	else if(_functionIndex == 2){
-		SetPosition(id, Ripple(uv.x, uv.y, _Time));
-	}
-	else if(_functionIndex == 3){
-		SetPosition(id, Sphere(uv.x, uv.y, _Time));
-	}
-}
+#endif
+
+
 
 
 

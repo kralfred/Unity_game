@@ -26,7 +26,7 @@ public class GPUGraph : MonoBehaviour
     [SerializeField]
     int size;
 
-    private enum FunctionName { Wave, MultiWave, Ripple, Sphere }
+    private enum FunctionName { Wave, MultiWave, Ripple, Sphere, Torus }
 
     [SerializeField]
     private FunctionName currentFunction = FunctionName.Wave;
@@ -44,7 +44,8 @@ public class GPUGraph : MonoBehaviour
         resolutionId = Shader.PropertyToID("_Resolution"),
         stepId = Shader.PropertyToID("_Step"),
         timeId = Shader.PropertyToID("_Time"),
-        functionId = Shader.PropertyToID("_functionIndex");
+        functionId = Shader.PropertyToID("_functionIndex"),
+        transitionProgressId = Shader.PropertyToID("_TransitionProgress");
 
     private ComputeBuffer positionsBuffer;
     public ComputeBuffer timeBuffer;
@@ -58,6 +59,13 @@ public class GPUGraph : MonoBehaviour
         computeShader.SetFloat(timeId, Time.time);
         computeShader.SetBuffer(0, positionsId, positionsBuffer);
         computeShader.SetInt(functionId, (int)currentFunction);
+        if (transitioning)
+        {
+            computeShader.SetFloat(
+                transitionProgressId,
+                Mathf.SmoothStep(0f, 1f, duration / transitionDuration)
+            );
+        }
 
         int kernelHandle = computeShader.FindKernel("FunctionKernel");
         computeShader.SetBuffer(kernelHandle, "_TimeBuffer", timeBuffer);

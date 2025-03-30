@@ -20,6 +20,11 @@ public class GPUGraph : MonoBehaviour
     [SerializeField]
     ComputeShader computeShader;
 
+    [SerializeField]
+    ComputeBuffer timeBuff;
+
+    [SerializeField]
+    int size;
 
     private enum FunctionName { Wave, MultiWave, Ripple, Sphere }
 
@@ -32,7 +37,7 @@ public class GPUGraph : MonoBehaviour
     [SerializeField]
     Mesh mesh;
 
-   
+    
 
     static readonly int
         positionsId = Shader.PropertyToID("_Positions"),
@@ -42,12 +47,12 @@ public class GPUGraph : MonoBehaviour
         functionId = Shader.PropertyToID("_functionIndex");
 
     private ComputeBuffer positionsBuffer;
-
+    public ComputeBuffer timeBuffer;
     void UpdateFunctionOnGPU()
     {
 
-
-        float step = 2f / resolution;
+       
+        float step = (1f + size) / resolution;
         computeShader.SetInt(resolutionId, resolution);
         computeShader.SetFloat(stepId, step);
         computeShader.SetFloat(timeId, Time.time);
@@ -55,6 +60,7 @@ public class GPUGraph : MonoBehaviour
         computeShader.SetInt(functionId, (int)currentFunction);
 
         int kernelHandle = computeShader.FindKernel("FunctionKernel");
+        computeShader.SetBuffer(kernelHandle, "_TimeBuffer", timeBuffer);
         if (kernelHandle < 0)
         {
             Debug.LogError("Failed to find kernel");
@@ -72,7 +78,14 @@ public class GPUGraph : MonoBehaviour
         );
     }
 
+    void Awake()
+    {
+        // Initialize buffers in Awake
+        positionsBuffer = new ComputeBuffer(resolution * resolution, 3 * 4);
+        timeBuffer = new ComputeBuffer(1, sizeof(float));  // Single float buffer
 
+        UpdateFunctionOnGPU();
+    }
 
     float duration;
 
@@ -82,6 +95,12 @@ public class GPUGraph : MonoBehaviour
 
     void OnEnable()
     {
+        timeBuffer = new ComputeBuffer(1, sizeof(float));
+        float time = Time.time;
+        timeBuffer.SetData(new[] { time });
+
+
+
         // Check compute shader support
         if (!SystemInfo.supportsComputeShaders)
         {
@@ -103,20 +122,19 @@ public class GPUGraph : MonoBehaviour
     {
         positionsBuffer.Release();
         positionsBuffer = null;
+        timeBuffer?.Release();
+    }
+    void UpdateTime() { 
+            float time = Time.time;
+        timeBuffer.SetData(new[] { time });
     }
 
     void Update() {
         UpdateFunctionOnGPU();
-
+        UpdateTime();
     }
 
-    void PickNextFunction() {
-    }
 
-    void Start()
-    {
-        
-    }
 
 
 }

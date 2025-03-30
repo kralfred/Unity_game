@@ -6,16 +6,20 @@
 uint _Resolution, _functionIndex;
 
 float _Step, _Time;
-   
 
-float3 Wave (float u, float v, float t) {
+ StructuredBuffer<float> _TimeBuffer;
+
+
+float3 Wave (float u, float v) {
+	float t = _TimeBuffer[0]; 
 	float3 p;
 	p.x = u;
 	p.y = sin(PI * (u + v + t));
 	p.z = v;
 	return p;
 }
-float3 MultiWave(float u, float v, float t) {
+float3 MultiWave(float u, float v) {
+	float t = _TimeBuffer[0]; 
     float3 p;
     p.x = u;
     p.y = sin(PI * (u + 0.5f * t));  
@@ -61,10 +65,10 @@ void SetPosition (uint3 id, float3 position) {
 void FunctionKernel (uint3 id: SV_DispatchThreadID) {
 	float2 uv = GetUV(id);
 	if(_functionIndex == 0){
-		SetPosition(id, Wave(uv.x, uv.y, _Time));
+		SetPosition(id, Wave(uv.x, uv.y));
 		}
 		else if(_functionIndex == 1){
-		SetPosition(id, MultiWave(uv.x, uv.y, _Time));
+		SetPosition(id, MultiWave(uv.x, uv.y));
 	}
 	else if(_functionIndex == 2){
 		SetPosition(id, Ripple(uv.x, uv.y, _Time));

@@ -27,6 +27,9 @@ public class Graph : MonoBehaviour
     AnimationToggle toggle;
 
 
+
+    private enum sizeOption  {Small, Medium, Big };
+
     [SerializeField] private FunctionLibrary.FunctionName _function;
     public FunctionLibrary.FunctionName Function
     {
@@ -41,7 +44,7 @@ public class Graph : MonoBehaviour
         }
     }
 
-    private float step;
+    private float step = 80;
 
     Transform[] points;
 
@@ -70,7 +73,6 @@ public class Graph : MonoBehaviour
 
         }
 
-
     }
     private void OnValidate()
     {
@@ -85,7 +87,7 @@ public class Graph : MonoBehaviour
 
     void Update()
     {
-        Profiler.BeginSample("Update Sample");
+       
         float time = Time.time;
 
         for (int i = 0, x = 0, z = 0; i < points.Length; i++, x++)
@@ -102,7 +104,7 @@ public class Graph : MonoBehaviour
 
 
         }
-        Profiler.EndSample();
+     
     }
 
     async void InitiateAsync()

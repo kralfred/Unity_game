@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting.Dependencies.Sqlite;
 using UnityEngine;
 using static FunctionLibrary;
 
@@ -20,11 +21,11 @@ public class GPUGraph : MonoBehaviour
     [SerializeField]
     ComputeShader computeShader;
 
-    [SerializeField]
+    [SerializeField, Min(0f)]
     ComputeBuffer timeBuff;
 
-    [SerializeField]
-    int size;
+    [SerializeField, Range(0, 10)]  // Now size is clamped between 0 and 10
+    int size = 1;
 
     private enum FunctionName { Wave, MultiWave, Ripple, Sphere, Torus }
 
@@ -40,7 +41,6 @@ public class GPUGraph : MonoBehaviour
 
     private int kernelHandle;
     private int morphKernel;
-    private bool transitioning;
     private float transitionProgress;
 
     static readonly int
@@ -84,9 +84,9 @@ public class GPUGraph : MonoBehaviour
 
     void Awake()
     {
-        
+
         positionsBuffer = new ComputeBuffer(resolution * resolution, 3 * 4);
-        timeBuffer = new ComputeBuffer(1, sizeof(float));  // Single float buffer
+        timeBuffer = new ComputeBuffer(1, sizeof(float)); 
         computeShader.SetInt(functionId, (int)currentFunction);
         kernelHandle = computeShader.FindKernel("FunctionKernel");
         morphKernel = computeShader.FindKernel("MorphKernel");
@@ -98,15 +98,15 @@ public class GPUGraph : MonoBehaviour
     private void StartTransition(FunctionName from, FunctionName to)
     {
 
-        transitioning = true;
+
         transitionProgress = 0f;
         StartCoroutine(TransitionCoroutine());
     }
 
     private IEnumerator TransitionCoroutine()
     {
-            
-            
+
+
 
         float elapsed = 0f;
         while (elapsed < transitionDuration)
@@ -121,18 +121,19 @@ public class GPUGraph : MonoBehaviour
             elapsed += Time.deltaTime;
             UpdateFunctionOnGPU();
             yield return null;
-            
+
         }
         kernelHandle = computeShader.FindKernel("FunctionKernel");
-        transitioning = false;
         transitionProgress = 1f;
     }
 
     private void OnValidate()
     {
+
+
         if (Application.isPlaying)
         {
-            // Detect function change
+            size = Mathf.Clamp(size, 0, 10);
             if (currentFunction != previousFunction)
             {
 
@@ -140,11 +141,11 @@ public class GPUGraph : MonoBehaviour
                 computeShader.SetInt(functionFrom, (int)previousFunction);
                 Debug.Log($"Function changing from {previousFunction} to {currentFunction}");
 
-                // Store previous before updating
+
                 FunctionName oldFunction = previousFunction;
                 previousFunction = currentFunction;
 
-                // Trigger transition
+
                 StartTransition(oldFunction, currentFunction);
                 Debug.Log($"Function changing from {oldFunction}");
             }
@@ -157,9 +158,6 @@ public class GPUGraph : MonoBehaviour
         float time = Time.time;
         timeBuffer.SetData(new[] { time });
 
-
-
-        // Check compute shader support
         if (!SystemInfo.supportsComputeShaders)
         {
             Debug.LogError("Compute shaders not supported!");
@@ -169,7 +167,6 @@ public class GPUGraph : MonoBehaviour
 
         positionsBuffer = new ComputeBuffer(resolution * resolution, 3 * 4);
 
-        // Verify kernel exists
         if (computeShader != null && !computeShader.HasKernel("FunctionKernel"))
         {
             Debug.LogError("Kernel not found in compute shader!");
@@ -187,12 +184,14 @@ public class GPUGraph : MonoBehaviour
         positionsBuffer = null;
         timeBuffer?.Release();
     }
-    void UpdateTime() { 
-            float time = Time.time;
+    void UpdateTime()
+    {
+        float time = Time.time;
         timeBuffer.SetData(new[] { time });
     }
 
-    void Update() {
+    void Update()
+    {
         UpdateFunctionOnGPU();
         UpdateTime();
     }

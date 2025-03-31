@@ -30,6 +30,7 @@ public class GPUGraph : MonoBehaviour
 
     [SerializeField]
     private FunctionName currentFunction = FunctionName.Wave;
+    private FunctionName previousFunction;
 
     [SerializeField]
     Material material;
@@ -88,7 +89,7 @@ public class GPUGraph : MonoBehaviour
 
     void Awake()
     {
-        // Initialize buffers in Awake
+        
         positionsBuffer = new ComputeBuffer(resolution * resolution, 3 * 4);
         timeBuffer = new ComputeBuffer(1, sizeof(float));  // Single float buffer
 
@@ -100,6 +101,45 @@ public class GPUGraph : MonoBehaviour
     bool transitioning;
 
     FunctionLibrary.FunctionName transitionFunction;
+    private void StartTransition(FunctionName from, FunctionName to)
+    {
+        // Set shader parameters
+        computeShader.SetInt("_FunctionFrom", (int)from);
+        computeShader.SetInt("_FunctionTo", (int)to);
+        computeShader.SetFloat("_TransitionProgress", 0f);
+
+        // Example coroutine for smooth transition
+        StartCoroutine(TransitionCoroutine());
+    }
+
+    private IEnumerator TransitionCoroutine(float duration = 1f)
+    {
+        for (float t = 0; t < 1f; t += Time.deltaTime / duration)
+        {
+            computeShader.SetFloat("_TransitionProgress", t);
+            UpdateFunctionOnGPU(); // Your existing dispatch method
+            yield return null;
+        }
+    }
+
+    private void OnValidate()
+    {
+        if (Application.isPlaying)
+        {
+            // Detect function change
+            if (currentFunction != previousFunction)
+            {
+                Debug.Log($"Function changing from {previousFunction} to {currentFunction}");
+
+                // Store previous before updating
+                FunctionName oldFunction = previousFunction;
+                previousFunction = currentFunction;
+
+                // Trigger transition
+                StartTransition(oldFunction, currentFunction);
+            }
+        }
+    }
 
     void OnEnable()
     {

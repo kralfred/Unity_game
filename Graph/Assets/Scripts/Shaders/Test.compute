@@ -1,0 +1,68 @@
+#pragma kernel FunctionKernel
+
+#include "TestFunctionLibrary.hlsl"
+
+// Buffers
+RWStructuredBuffer<float3> _Positions;
+StructuredBuffer<float> _TimeBuffer;
+
+// Parameters
+uint _Resolution;
+float _Step;
+int _functionIndex;
+int _FunctionFrom;
+int _FunctionTo;
+float _TransitionProgress;
+
+
+float3 GetFunctionOutput(int funcIndex, float u, float v)
+{
+    float t = _TimeBuffer[0];
+    
+    switch(funcIndex)
+    {
+        case 0: return Wave(u, v, t);
+        case 1: return MultiWave(u, v, t);
+        case 2: return Ripple(u, v, t);
+        case 3: return Sphere(u, v, t);
+        case 4: return Torus(u, v, t);
+        default: return 0;
+    }
+}
+void SetPosition(uint3 id, float3 position)
+{
+    if (id.x < _Resolution && id.y < _Resolution)
+    {
+        _Positions[id.x + id.y * _Resolution] = position;
+    }
+}
+// Helper functions
+float2 GetUV(uint3 id)
+{
+    return (id.xy + 0.5) * _Step - 1.0;
+}
+
+[numthreads(8,8,1)]
+void FunctionKernel(uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = GetUV(id);
+    float3 position;
+    
+    if (_TransitionProgress > 0)
+    {
+        float3 fromPos = GetFunctionOutput(_FunctionFrom, uv.x, uv.y);
+        float3 toPos = GetFunctionOutput(_FunctionTo, uv.x, uv.y);
+        position = lerp(fromPos, toPos, _TransitionProgress);
+    }
+    else
+    {
+        position = GetFunctionOutput(_functionIndex, uv.x, uv.y);
+    }
+    
+    SetPosition(id, position);
+}
+
+
+
+
+

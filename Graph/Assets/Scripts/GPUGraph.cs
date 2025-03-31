@@ -29,7 +29,7 @@ public class GPUGraph : MonoBehaviour
     private enum FunctionName { Wave, MultiWave, Ripple, Sphere, Torus }
 
     [SerializeField]
-    private FunctionName currentFunction = FunctionName.Wave;
+    private FunctionName currentFunction;
     private FunctionName previousFunction;
 
     [SerializeField]
@@ -38,43 +38,37 @@ public class GPUGraph : MonoBehaviour
     [SerializeField]
     Mesh mesh;
 
-    
+    private int kernelHandle;
+    private int morphKernel;
+    private bool transitioning;
+    private float transitionProgress;
 
     static readonly int
-        positionsId = Shader.PropertyToID("_Positions"),
-        resolutionId = Shader.PropertyToID("_Resolution"),
-        stepId = Shader.PropertyToID("_Step"),
-        timeId = Shader.PropertyToID("_Time"),
-        functionId = Shader.PropertyToID("_functionIndex"),
-        transitionProgressId = Shader.PropertyToID("_TransitionProgress");
+       positionsId = Shader.PropertyToID("_Positions"),
+       resolutionId = Shader.PropertyToID("_Resolution"),
+       stepId = Shader.PropertyToID("_Step"),
+       timeId = Shader.PropertyToID("_Time"),
+       functionId = Shader.PropertyToID("_functionIndex"),
+       functionFrom = Shader.PropertyToID("_FunctionFrom"),
+       transitionProgressId = Shader.PropertyToID("_TransitionProgress");
 
     private ComputeBuffer positionsBuffer;
     public ComputeBuffer timeBuffer;
     void UpdateFunctionOnGPU()
     {
 
-       
+
         float step = (1f + size) / resolution;
         computeShader.SetInt(resolutionId, resolution);
         computeShader.SetFloat(stepId, step);
         computeShader.SetFloat(timeId, Time.time);
-        computeShader.SetBuffer(0, positionsId, positionsBuffer);
+        computeShader.SetBuffer(kernelHandle, positionsId, positionsBuffer);
         computeShader.SetInt(functionId, (int)currentFunction);
-        if (transitioning)
-        {
-            computeShader.SetFloat(
-                transitionProgressId,
-                Mathf.SmoothStep(0f, 1f, duration / transitionDuration)
-            );
-        }
 
-        int kernelHandle = computeShader.FindKernel("FunctionKernel");
+
+
         computeShader.SetBuffer(kernelHandle, "_TimeBuffer", timeBuffer);
-        if (kernelHandle < 0)
-        {
-            Debug.LogError("Failed to find kernel");
-            return;
-        }
+
         int groups = Mathf.CeilToInt(resolution / 8f);
         computeShader.Dispatch(kernelHandle, groups, groups, 1);
 
@@ -87,39 +81,51 @@ public class GPUGraph : MonoBehaviour
         );
     }
 
+
     void Awake()
     {
         
         positionsBuffer = new ComputeBuffer(resolution * resolution, 3 * 4);
         timeBuffer = new ComputeBuffer(1, sizeof(float));  // Single float buffer
-
+        computeShader.SetInt(functionId, (int)currentFunction);
+        kernelHandle = computeShader.FindKernel("FunctionKernel");
+        morphKernel = computeShader.FindKernel("MorphKernel");
         UpdateFunctionOnGPU();
     }
 
-    float duration;
 
-    bool transitioning;
 
-    FunctionLibrary.FunctionName transitionFunction;
     private void StartTransition(FunctionName from, FunctionName to)
     {
-        // Set shader parameters
-        computeShader.SetInt("_FunctionFrom", (int)from);
-        computeShader.SetInt("_FunctionTo", (int)to);
-        computeShader.SetFloat("_TransitionProgress", 0f);
 
-        // Example coroutine for smooth transition
+        transitioning = true;
+        transitionProgress = 0f;
         StartCoroutine(TransitionCoroutine());
     }
 
-    private IEnumerator TransitionCoroutine(float duration = 1f)
+    private IEnumerator TransitionCoroutine()
     {
-        for (float t = 0; t < 1f; t += Time.deltaTime / duration)
+            
+            
+
+        float elapsed = 0f;
+        while (elapsed < transitionDuration)
         {
-            computeShader.SetFloat("_TransitionProgress", t);
-            UpdateFunctionOnGPU(); // Your existing dispatch method
+
+            transitionProgress = Mathf.SmoothStep(0f, 1f, elapsed / transitionDuration);
+            computeShader.SetBuffer(morphKernel, "_TimeBuffer", timeBuffer);
+            computeShader.SetBuffer(morphKernel, positionsId, positionsBuffer);
+            computeShader.SetFloat(transitionProgressId, transitionProgress);
+
+            kernelHandle = computeShader.FindKernel("MorphKernel");
+            elapsed += Time.deltaTime;
+            UpdateFunctionOnGPU();
             yield return null;
+            
         }
+        kernelHandle = computeShader.FindKernel("FunctionKernel");
+        transitioning = false;
+        transitionProgress = 1f;
     }
 
     private void OnValidate()
@@ -129,6 +135,9 @@ public class GPUGraph : MonoBehaviour
             // Detect function change
             if (currentFunction != previousFunction)
             {
+
+
+                computeShader.SetInt(functionFrom, (int)previousFunction);
                 Debug.Log($"Function changing from {previousFunction} to {currentFunction}");
 
                 // Store previous before updating
@@ -137,6 +146,7 @@ public class GPUGraph : MonoBehaviour
 
                 // Trigger transition
                 StartTransition(oldFunction, currentFunction);
+                Debug.Log($"Function changing from {oldFunction}");
             }
         }
     }
@@ -161,6 +171,11 @@ public class GPUGraph : MonoBehaviour
 
         // Verify kernel exists
         if (computeShader != null && !computeShader.HasKernel("FunctionKernel"))
+        {
+            Debug.LogError("Kernel not found in compute shader!");
+            enabled = false;
+        }
+        if (computeShader != null && !computeShader.HasKernel("MorphKernel"))
         {
             Debug.LogError("Kernel not found in compute shader!");
             enabled = false;

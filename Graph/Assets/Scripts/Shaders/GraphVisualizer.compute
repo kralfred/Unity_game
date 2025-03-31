@@ -1,5 +1,7 @@
 #pragma kernel FunctionKernel
 #pragma kernel MorphKernel
+
+
 #define PI 3.14159265358979323846
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
@@ -8,7 +10,6 @@
  RWStructuredBuffer<float3> _Positions;
 
 int _FunctionFrom; 
-int _FunctionTo;
 
 uint _Resolution, _functionIndex;
 string _CurrentFunc , _NextFunc;
@@ -24,26 +25,6 @@ void SetPosition (uint3 id, float3 position) {
 	}
 }
 
-[numthreads(8, 8, 1)]
-void FunctionKernel (uint3 id: SV_DispatchThreadID) {
-	float2 uv = GetUV(id);
-	if(_functionIndex == 0){
-		SetPosition(id, Wave(uv.x, uv.y));
-		}
-		else if(_functionIndex == 1){
-		SetPosition(id, MultiWave(uv.x, uv.y));
-	}
-	else if(_functionIndex == 2){
-		SetPosition(id, Ripple(uv.x, uv.y));
-	}
-	else if(_functionIndex == 3){
-		SetPosition(id, Sphere(uv.x, uv.y));
-	}
-	else if(_functionIndex == 4){
-		SetPosition(id, Torus(uv.x, uv.y));
-	}
-}
-
 
 #define CALL_FUNCTION(id, u, v) \
     (id == 0) ? Wave(u, v) : \
@@ -52,16 +33,31 @@ void FunctionKernel (uint3 id: SV_DispatchThreadID) {
     (id == 3) ? Sphere(u, v) : \
 	Torus(u, v)
 
+[numthreads(8, 8, 1)]
+void MorphKernel (uint3 id: SV_DispatchThreadID) {
+	float2 uv = GetUV(id);
 
-	[numthreads(8,8,1)]
-void MorphKernel(uint3 id : SV_DispatchThreadID) {
-    float2 uv = GetUV(id);
+	 float3 fromPos = CALL_FUNCTION(_FunctionFrom, uv.x, uv.y);
+    float3 toPos = CALL_FUNCTION(_functionIndex, uv.x, uv.y);
+    float3 finalPos = lerp(fromPos, toPos, _TransitionProgress);
     
-    float3 fromPos = CALL_FUNCTION(_FunctionFrom, uv.x, uv.y);
-    float3 toPos = CALL_FUNCTION(_FunctionTo, uv.x, uv.y);
-    float3 morphedPos = lerp(fromPos, toPos, _TransitionProgress);
+    SetPosition(id, finalPos);
 
-    
-    SetPosition(id, morphedPos);
 }
+
+[numthreads(8, 8, 1)]
+void FunctionKernel (uint3 id: SV_DispatchThreadID) {
+	float2 uv = GetUV(id);
+
+	SetPosition(id, CALL_FUNCTION(_functionIndex, uv.x, uv.y));
+
+}
+
+
+
+
+
+
+
+
 
